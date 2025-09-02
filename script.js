@@ -62,3 +62,15 @@ function checkWinner(currentBoard, lastMove) {
 // We can test our logic right in the browser console.
 console.log("Game logic initialized. The board is ready.");
 console.log(board);
+
+// This block is only for testing purposes using Jest in Node.js
+// It will be ignored by the browser.
+try {
+  module.exports = {
+    createBoard,
+    checkWinner,
+    BOARD_SIZE
+  };
+} catch (e) {
+  // This will prevent errors when running in a browser
+}
