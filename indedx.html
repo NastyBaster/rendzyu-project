@@ -10,8 +10,14 @@
 <body>
   <h1>Проєкт Рендзю: Етап 1</h1>
   <canvas id="game-board"></canvas>
+  <!-- Firebase App (обов'язково) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <!-- Firebase Realtime Database (ми будемо її використовувати) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <!-- Firebase Authentication (для входу користувачів) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
-  <!-- Підключаємо наш скрипт. 'defer' гарантує, що скрипт виконається після завантаження HTML -->
+  <!-- Наш скрипт, який тепер може використовувати firebase -->
   <script src="script.js" defer></script>
 </body>
 </html>
