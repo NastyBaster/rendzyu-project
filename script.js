@@ -1,11 +1,12 @@
 // Поки що залишаємо цей блок порожнім. Ми заповнимо його, коли будемо налаштовувати прод.
 
 
-// --- ЛОГІКА ВИБОРУ СЕРЕДОВИЩА ---
-// Якщо сайт запущено локально (з вашого комп'ютера), використовуємо тестову конфігурацію.
-const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const activeConfig = isDevelopment ? firebaseConfigTest : firebaseConfigProd;
+// --- ЛОГІКА ВИБОРУ СЕРЕДОВЩА ---
+// This new check works for both local servers AND for opening the file directly.
+const isDevelopment = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
+// We determine which config to use based on the isDevelopment variable.
+const activeConfig = isDevelopment ? firebaseConfigTest : firebaseConfigProd;
 // --- ІНІЦІАЛІЗАЦІЯ FIREBASE ---
 // Цей рядок створює активне підключення до Firebase
 const app = firebase.initializeApp(activeConfig);
