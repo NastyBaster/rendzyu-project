@@ -10,6 +10,7 @@
 <body>
   <h1>Проєкт Рендзю: Етап 1</h1>
   <canvas id="game-board"></canvas>
+
   <!-- Firebase App (обов'язково) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <!-- Firebase Realtime Database (ми будемо її використовувати) -->
@@ -19,7 +20,8 @@
 
 <!-- Підключаємо наші конфігурації ПЕРЕД основним скриптом -->
   <script src="config.js"></script>
-  <!-- Наш основний скрипт -->
+  
+  <!-- Наш основний скрипт (ОДИН РАЗ І З DEFER) -->
   <script src="script.js" defer></script>
 </body>
 </html>

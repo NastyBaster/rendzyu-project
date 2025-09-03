@@ -18,6 +18,11 @@ console.log(`Firebase is running in ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTIO
 const canvas = document.getElementById('game-board');
 const ctx = canvas.getContext('2d');
 
+// --- Game Constants ---
+// Let's add some [Term: constants]. This is a [Term: best practice] because it makes the code easier to read and change later.
+const BOARD_SIZE = 15;
+const WINNING_LENGTH = 5;
+
 // Встановлюємо розмір дошки
 canvas.width = 600;
 canvas.height = 600;
@@ -65,10 +70,7 @@ console.log("Скрипт успішно завантажено, полотно 
 // STAGE 2: GAME LOGIC
 // ===============================================
 
-// --- Game Constants ---
-// Let's add some [Term: constants]. This is a [Term: best practice] because it makes the code easier to read and change later.
-const BOARD_SIZE = 15;
-const WINNING_LENGTH = 5;
+
 
 // --- Game State ---
 // This variable will hold our game board data (the matrix).
