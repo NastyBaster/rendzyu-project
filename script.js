@@ -51,10 +51,44 @@ function createBoard() {
  * @param {{x: number, y: number, color: string}} lastMove - The details of the move to check.
  * @returns {boolean} - True if the move is a winning move, otherwise false.
  */
+
 function checkWinner(currentBoard, lastMove) {
-  // We will write the logic for this function in the next step.
-  // For now, it's just an empty shell. This is our [Term: boilerplate] code.
-  console.log("Checking for a winner...", lastMove); // A temporary message to see that it works
+  const { x, y, color } = lastMove;
+
+  const countStones = (dx, dy) => {
+    let count = 0;
+    for (let i = 1; i < WINNING_LENGTH; i++) {
+      const newX = x + i * dx;
+      const newY = y + i * dy;
+      if (newX >= 0 && newX < BOARD_SIZE && newY >= 0 && newY < BOARD_SIZE) {
+        if (currentBoard[newY][newX] === color) {
+          count++;
+        } else {
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+    return count;
+  };
+
+  // Check Horizontally
+  const horizontalCount = countStones(1, 0) + countStones(-1, 0) + 1;
+  if (horizontalCount >= WINNING_LENGTH) return true;
+
+  // Check Vertically
+  const verticalCount = countStones(0, 1) + countStones(0, -1) + 1;
+  if (verticalCount >= WINNING_LENGTH) return true;
+
+  // Check Diagonally (top-left to bottom-right)
+  const diagonalCount = countStones(1, 1) + countStones(-1, -1) + 1;
+  if (diagonalCount >= WINNING_LENGTH) return true;
+
+  // Check Anti-Diagonally (top-right to bottom-left)
+  const antiDiagonalCount = countStones(1, -1) + countStones(-1, 1) + 1;
+  if (antiDiagonalCount >= WINNING_LENGTH) return true;
+
   return false;
 }
 
