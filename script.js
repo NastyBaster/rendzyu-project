@@ -14,6 +14,11 @@ const WINNING_LENGTH = 5;
 
 const canvas = document.getElementById('game-board');
 const ctx = canvas.getContext('2d');
+const modalOverlay = document.getElementById('modal-overlay');
+const winnerMessage = document.getElementById('winner-message');
+const rematchBtn = document.getElementById('rematch-btn');
+const newGameBtn = document.getElementById('new-game-btn');
+
 canvas.width = 600;
 canvas.height = 600;
 const CELL_SIZE = canvas.width / BOARD_SIZE;
@@ -21,26 +26,19 @@ const CELL_SIZE = canvas.width / BOARD_SIZE;
 // ===============================================
 // GAME STATE
 // ===============================================
-let board; // Оголошуємо змінну тут
-let currentPlayer = 'black'; // Black always starts
-let isGameOver = false; // <-- ADD THIS LINE
+let board;
+let currentPlayer = 'black';
+let isGameOver = false;
+let moveCount = 0;
 
 // ===============================================
 // GAME LOGIC FUNCTIONS
 // ===============================================
-
-/**
- * Creates a new, empty game board array.
- */
 function createBoard() {
   return Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
 }
 
-/**
- * Checks if the last move resulted in a win.
- */
 function checkWinner(currentBoard, lastMove) {
-  // ... (код функції checkWinner залишається без змін)
   const { x, y, color } = lastMove;
   const countStones = (dx, dy) => {
     let count = 0;
@@ -67,12 +65,8 @@ function checkWinner(currentBoard, lastMove) {
 }
 
 // ===============================================
-// DRAWING FUNCTIONS
+// DRAWING & UI FUNCTIONS
 // ===============================================
-
-/**
- * Draws the entire game board grid.
- */
 function drawBoard() {
   ctx.strokeStyle = '#555';
   ctx.lineWidth = 1;
@@ -88,9 +82,6 @@ function drawBoard() {
   }
 }
 
-/**
- * Draws all the stones from the board array onto the canvas.
- */
 function drawStones() {
   ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
   ctx.shadowBlur = 4;
@@ -116,47 +107,51 @@ function drawStones() {
   ctx.shadowOffsetY = 0;
 }
 
+function showWinnerModal(winner) {
+  if (winner === 'draw') {
+    winnerMessage.textContent = 'It\'s a Draw!';
+  } else {
+    winnerMessage.textContent = `${winner.toUpperCase()} wins!`;
+  }
+  modalOverlay.classList.remove('hidden');
+}
+
+function redraw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBoard();
+  drawStones();
+}
+
 // ===============================================
 // INTERACTION
 // ===============================================
-
-/**
- * Handles the logic when a player clicks on the board.
- * @param {MouseEvent} event - The browser's click event object.
- */
 function handleBoardClick(event) {
-  // Gatekeeper: If the game is over, immediately stop.
   if (isGameOver) {
     return;
   }
-
-  // --- All the logic below will only run if the game is NOT over ---
-
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
-
   const x = Math.floor(mouseX / CELL_SIZE);
   const y = Math.floor(mouseY / CELL_SIZE);
 
-  // Check if the move is valid (on the board and the cell is empty)
   if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE && !board[y][x]) {
-    // 1. Place the stone
     board[y][x] = currentPlayer;
-
-    // 2. Redraw the board immediately to show the new stone
+    moveCount++;
     redraw();
 
-    // 3. Check for a winner
     const lastMove = { x, y, color: currentPlayer };
     if (checkWinner(board, lastMove)) {
-      // If there's a winner, set the flag and show the message.
       isGameOver = true;
       setTimeout(() => {
-        alert(`${currentPlayer.toUpperCase()} wins!`);
+        showWinnerModal(currentPlayer);
+      }, 100);
+    } else if (moveCount === BOARD_SIZE * BOARD_SIZE) {
+      isGameOver = true;
+      setTimeout(() => {
+        showWinnerModal('draw');
       }, 100);
     } else {
-      // 4. If there is NO winner, switch turns.
       currentPlayer = (currentPlayer === 'black') ? 'white' : 'black';
     }
   }
@@ -165,36 +160,26 @@ function handleBoardClick(event) {
 // ===============================================
 // INITIALIZATION
 // ===============================================
-
-/**
- * Clears the canvas and redraws the board and stones.
- * This is our main screen update function.
- */
-function redraw() {
-  // Clear the entire canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawBoard();
-  drawStones();
-}
-
-/**
- * This is the main function that runs when the page first loads.
- */
-function initializeGame() {
-  console.log("Game logic initialized. The board is ready.");
+function resetGame() {
+  modalOverlay.classList.add('hidden');
+  console.log("Resetting game state...");
   board = createBoard();
-
-  // --- Remove the temporary test stones ---
-  // We don't need them anymore because we will be placing stones with clicks.
-
-  redraw(); // Initial draw of the empty board
-
-    // Listen for click events on the canvas
-  canvas.addEventListener('click', handleBoardClick);
+  currentPlayer = 'black';
+  isGameOver = false;
+  moveCount = 0;
+  redraw();
 }
 
-// Call the initialization function to start everything.
-initializeGame();
+function setupApplication() {
+  console.log("Setting up application event listeners...");
+  canvas.addEventListener('click', handleBoardClick);
+  rematchBtn.addEventListener('click', resetGame);
+  newGameBtn.addEventListener('click', resetGame);
+  resetGame();
+}
+
+// This is the single entry point that starts our application.
+setupApplication();
 
 // This block is only for testing purposes
 try {
