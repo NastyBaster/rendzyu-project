@@ -22,6 +22,7 @@ const CELL_SIZE = canvas.width / BOARD_SIZE;
 // GAME STATE
 // ===============================================
 let board; // Оголошуємо змінну тут
+let currentPlayer = 'black'; // Black always starts
 
 // ===============================================
 // GAME LOGIC FUNCTIONS
@@ -115,28 +116,77 @@ function drawStones() {
 }
 
 // ===============================================
+// INTERACTION
+// ===============================================
+
+/**
+ * Handles the logic when a player clicks on the board.
+ * @param {MouseEvent} event - The browser's click event object.
+ */
+function handleBoardClick(event) {
+  // This gets the position and size of the canvas on the webpage.
+  const rect = canvas.getBoundingClientRect();
+
+  // This is the formula to convert screen coordinates to canvas coordinates.
+  // It correctly handles page scrolling and canvas scaling.
+  const mouseX = event.clientX - rect.left;
+  const mouseY = event.clientY - rect.top;
+
+  // Convert pixel coordinates to grid coordinates
+  const x = Math.floor(mouseX / CELL_SIZE);
+  const y = Math.floor(mouseY / CELL_SIZE);
+
+  // Check if the click is within the board and the cell is empty
+  if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE && !board[y][x]) {
+    // Place the stone in our data array
+    board[y][x] = currentPlayer;
+
+    // Check for a winner
+    const lastMove = { x, y, color: currentPlayer };
+    if (checkWinner(board, lastMove)) {
+      // Use a timeout to allow the winning stone to be drawn before the alert
+      setTimeout(() => {
+        alert(`${currentPlayer.toUpperCase()} wins!`);
+      }, 100);
+    }
+
+    // Switch turns
+    currentPlayer = (currentPlayer === 'black') ? 'white' : 'black';
+
+    // Update the screen
+    redraw();
+  }
+}
+
+// ===============================================
 // INITIALIZATION
 // ===============================================
+
+/**
+ * Clears the canvas and redraws the board and stones.
+ * This is our main screen update function.
+ */
+function redraw() {
+  // Clear the entire canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBoard();
+  drawStones();
+}
 
 /**
  * This is the main function that runs when the page first loads.
  */
 function initializeGame() {
   console.log("Game logic initialized. The board is ready.");
-  
-  // 1. Create the board data structure
   board = createBoard();
 
-  // 2. Add temporary stones for testing
-  board[7][7] = 'black';
-  board[7][8] = 'white';
-  board[8][7] = 'black';
-  board[6][6] = 'white';
+  // --- Remove the temporary test stones ---
+  // We don't need them anymore because we will be placing stones with clicks.
 
-  // 3. Draw everything
-  console.log("Initializing game visuals...");
-  drawBoard();
-  drawStones();
+  redraw(); // Initial draw of the empty board
+
+    // Listen for click events on the canvas
+  canvas.addEventListener('click', handleBoardClick);
 }
 
 // Call the initialization function to start everything.
