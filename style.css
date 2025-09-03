@@ -13,3 +13,55 @@ canvas {
   border: 2px solid #333;
   background-color: #f9d58a; /* Колір дошки */
 }
+
+/* --- General Purpose Classes --- */
+.hidden {
+  display: none !important;
+}
+
+/* --- Button Styles --- */
+/* We create a generic button style we can apply to any button */
+button {
+  font-size: 18px;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 2px solid #555;
+  background-color: #f0f0f0;
+  color: #333;
+  transition: all 0.2s ease; /* Smooth transition for hover effects */
+}
+
+button:hover {
+  background-color: #ddd;
+  border-color: #000;
+}
+
+.button-group {
+  display: flex;
+  gap: 15px; /* Adds space between buttons */
+  margin-top: 20px;
+}
+
+
+/* --- Modal Styles --- */
+#modal-overlay {
+  position: fixed; /* Stays in place even if you scroll */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Ensures it's on top of everything else */
+}
+
+#winner-modal {
+  background: white;
+  padding: 25px 40px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}

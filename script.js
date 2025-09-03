@@ -23,6 +23,7 @@ const CELL_SIZE = canvas.width / BOARD_SIZE;
 // ===============================================
 let board; // Оголошуємо змінну тут
 let currentPlayer = 'black'; // Black always starts
+let isGameOver = false; // <-- ADD THIS LINE
 
 // ===============================================
 // GAME LOGIC FUNCTIONS
@@ -124,37 +125,40 @@ function drawStones() {
  * @param {MouseEvent} event - The browser's click event object.
  */
 function handleBoardClick(event) {
-  // This gets the position and size of the canvas on the webpage.
-  const rect = canvas.getBoundingClientRect();
+  // Gatekeeper: If the game is over, immediately stop.
+  if (isGameOver) {
+    return;
+  }
 
-  // This is the formula to convert screen coordinates to canvas coordinates.
-  // It correctly handles page scrolling and canvas scaling.
+  // --- All the logic below will only run if the game is NOT over ---
+
+  const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
 
-  // Convert pixel coordinates to grid coordinates
   const x = Math.floor(mouseX / CELL_SIZE);
   const y = Math.floor(mouseY / CELL_SIZE);
 
-  // Check if the click is within the board and the cell is empty
+  // Check if the move is valid (on the board and the cell is empty)
   if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE && !board[y][x]) {
-    // Place the stone in our data array
+    // 1. Place the stone
     board[y][x] = currentPlayer;
 
-    // Check for a winner
+    // 2. Redraw the board immediately to show the new stone
+    redraw();
+
+    // 3. Check for a winner
     const lastMove = { x, y, color: currentPlayer };
     if (checkWinner(board, lastMove)) {
-      // Use a timeout to allow the winning stone to be drawn before the alert
+      // If there's a winner, set the flag and show the message.
+      isGameOver = true;
       setTimeout(() => {
         alert(`${currentPlayer.toUpperCase()} wins!`);
       }, 100);
+    } else {
+      // 4. If there is NO winner, switch turns.
+      currentPlayer = (currentPlayer === 'black') ? 'white' : 'black';
     }
-
-    // Switch turns
-    currentPlayer = (currentPlayer === 'black') ? 'white' : 'black';
-
-    // Update the screen
-    redraw();
   }
 }
 

@@ -6,6 +6,7 @@
   <title>Рендзю</title>
   <!-- Підключаємо наш файл стилів -->
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
   <h1>Проєкт Рендзю: Етап 1</h1>
@@ -23,5 +24,18 @@
   
   <!-- Наш основний скрипт (ОДИН РАЗ І З DEFER) -->
   <script src="script.js" defer></script>
+
+  <!-- This is the overlay that will dim the background -->
+<div id="modal-overlay" class="hidden">
+  <!-- This is the actual modal box -->
+  <div id="winner-modal">
+    <h2 id="winner-message"></h2>
+    <div class="button-group">
+      <button id="rematch-btn">Play Again</button>
+      <button id="new-game-btn">New Game</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
