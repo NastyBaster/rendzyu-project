@@ -22,6 +22,44 @@ const ctx = canvas.getContext('2d');
 canvas.width = 600;
 canvas.height = 600;
 
+// --- STAGE 3: DRAWING ---
+
+const CELL_SIZE = canvas.width / BOARD_SIZE;
+
+/**
+ * Draws the entire game board grid.
+ */
+function drawBoard() {
+  // Set the style for the grid lines
+  ctx.strokeStyle = '#555'; // A dark grey color for the lines
+  ctx.lineWidth = 1;
+
+  // Draw the lines
+  for (let i = 0; i < BOARD_SIZE; i++) {
+    // Draw vertical line
+    ctx.beginPath();
+    ctx.moveTo(CELL_SIZE * (i + 0.5), CELL_SIZE * 0.5);
+    ctx.lineTo(CELL_SIZE * (i + 0.5), canvas.height - CELL_SIZE * 0.5);
+    ctx.stroke();
+
+    // Draw horizontal line
+    ctx.beginPath();
+    ctx.moveTo(CELL_SIZE * 0.5, CELL_SIZE * (i + 0.5));
+    ctx.lineTo(canvas.width - CELL_SIZE * 0.5, CELL_SIZE * (i + 0.5));
+    ctx.stroke();
+  }
+}
+
+// --- INITIALIZATION ---
+// This is the code that runs when the page first loads.
+function initializeGame() {
+  console.log("Initializing game visuals...");
+  drawBoard();
+}
+
+// Call the initialization function to start everything.
+initializeGame();
+
 console.log("Скрипт успішно завантажено, полотно для гри готове!");
 // ===============================================
 // STAGE 2: GAME LOGIC
