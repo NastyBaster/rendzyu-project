@@ -8,11 +8,8 @@ console.log(`Firebase is running in ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTIO
 const db = firebase.database();
 
 // ===============================================
-// GLOBAL CONSTANTS & DOM ELEMENTS
+// DOM ELEMENTS
 // ===============================================
-const BOARD_SIZE = 15;
-const WINNING_LENGTH = 5;
-
 const canvas = document.getElementById('game-board');
 const ctx = canvas.getContext('2d');
 const modalOverlay = document.getElementById('modal-overlay');
@@ -31,37 +28,40 @@ const gameContainer = document.getElementById('game-container');
 const userInfo = document.getElementById('user-info');
 const userNameDisplay = document.getElementById('user-name-display');
 
+// ===============================================
+// GLOBAL CONSTANTS
+// ===============================================
+const BOARD_SIZE = 15;
+const WINNING_LENGTH = 5;
 canvas.width = 600;
 canvas.height = 600;
 const CELL_SIZE = canvas.width / BOARD_SIZE;
 
 // ===============================================
-// GAME STATE
+// GAME STATE (This is our single source of truth, updated by Firebase)
 // ===============================================
-let board;
-let currentPlayer;
-let isGameOver;
-let moveCount;
 let localPlayer = { uid: null, name: 'Guest' };
+let currentGameId = null;
+let gameUnsubscribe = null;
+let myRole = null;
+let gameState = {}; // This object will hold all data from Firebase
 
 // ===============================================
-// GAME LOGIC FUNCTIONS
+// PURE LOGIC FUNCTIONS (No side effects)
 // ===============================================
 function createBoard() {
   return Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
 }
 
-function checkWinner(currentBoard, lastMove) {
+function checkWinner(board, lastMove) {
   const { x, y, color } = lastMove;
   const countStones = (dx, dy) => {
     let count = 0;
     for (let i = 1; i < WINNING_LENGTH; i++) {
       const newX = x + i * dx;
       const newY = y + i * dy;
-      if (newX >= 0 && newX < BOARD_SIZE && newY >= 0 && newY < BOARD_SIZE) {
-        if (currentBoard[newY][newX] === color) {
-          count++;
-        } else { break; }
+      if (newX >= 0 && newX < BOARD_SIZE && newY >= 0 && newY < BOARD_SIZE && board[newY][newX] === color) {
+        count++;
       } else { break; }
     }
     return count;
@@ -77,40 +77,24 @@ function checkWinner(currentBoard, lastMove) {
   return false;
 }
 
-async function createGame() {
-  try {
-    const gameId = Math.floor(100 + Math.random() * 900).toString();
-    const gameRef = db.ref(`games/${gameId}`);
+function convertFirebaseBoardToArray(firebaseBoard) {
+  if (!firebaseBoard) return createBoard();
+  if (Array.isArray(firebaseBoard)) return firebaseBoard;
 
-    const newGameData = {
-      board: createBoard(),
-      currentPlayer: 'black',
-      isGameOver: false,
-      winner: null,
-      players: {
-        black: {
-          uid: localPlayer.uid,
-          name: localPlayer.name
-        },
-        white: null
-      },
-      status: 'waiting'
-    };
-
-    await gameRef.set(newGameData);
-    console.log(`Game created with ID: ${gameId}`);
-    
-    showView('game');
-    // We will add logic to listen for real-time updates next
-    
-  } catch (error) {
-    console.error("Error creating game:", error);
-    alert("Could not create game. Please check the console for errors.");
+  const boardArray = [];
+  for (let y = 0; y < BOARD_SIZE; y++) {
+    boardArray[y] = [];
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      // Надійно отримуємо значення, навіть якщо рядка або клітинки не існує
+      const cellValue = firebaseBoard[y] ? firebaseBoard[y][x] : null;
+      boardArray[y][x] = cellValue || null; // Гарантуємо, що там буде null, а не undefined
+    }
   }
+  return boardArray;
 }
 
 // ===============================================
-// DRAWING & UI FUNCTIONS
+// UI & DRAWING FUNCTIONS
 // ===============================================
 function drawBoard() {
   ctx.strokeStyle = '#555';
@@ -127,7 +111,7 @@ function drawBoard() {
   }
 }
 
-function drawStones() {
+function drawStones(board) {
   ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
   ctx.shadowBlur = 4;
   ctx.shadowOffsetX = 2;
@@ -152,6 +136,14 @@ function drawStones() {
   ctx.shadowOffsetY = 0;
 }
 
+function redraw(board) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBoard();
+  if (board) {
+    drawStones(board);
+  }
+}
+
 function showWinnerModal(winner) {
   if (winner === 'draw') {
     winnerMessage.textContent = 'It\'s a Draw!';
@@ -161,58 +153,101 @@ function showWinnerModal(winner) {
   modalOverlay.classList.remove('hidden');
 }
 
-function redraw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawBoard();
-  drawStones();
-}
-
 function showView(viewName) {
   lobbyContainer.classList.add('hidden');
   joinGameScreen.classList.add('hidden');
   gameContainer.classList.add('hidden');
-
-  if (viewName === 'lobby') {
-    lobbyContainer.classList.remove('hidden');
-  } else if (viewName === 'join') {
-    joinGameScreen.classList.remove('hidden');
-  } else if (viewName === 'game') {
-    gameContainer.classList.remove('hidden');
-  }
+  if (viewName === 'lobby') lobbyContainer.classList.remove('hidden');
+  else if (viewName === 'join') joinGameScreen.classList.remove('hidden');
+  else if (viewName === 'game') gameContainer.classList.remove('hidden');
 }
 
 // ===============================================
-// INTERACTION
+// FIREBASE & GAME FLOW
 // ===============================================
-function handleBoardClick(event) {
-  if (isGameOver) {
+async function createGame() {
+  if (!localPlayer.uid) {
+    alert("Please enter a guest name first!");
     return;
   }
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = event.clientX - rect.left;
-  const mouseY = event.clientY - rect.top;
-  const x = Math.floor(mouseX / CELL_SIZE);
-  const y = Math.floor(mouseY / CELL_SIZE);
+  try {
+    const gameId = Math.floor(100 + Math.random() * 900).toString();
+    const gameRef = db.ref(`games/${gameId}`);
+    const newGameData = {
+      board: createBoard(),
+      currentPlayer: 'black',
+      isGameOver: false,
+      winner: null,
+      players: { black: { uid: localPlayer.uid, name: localPlayer.name }, white: null },
+      status: 'waiting',
+      moveCount: 0
+    };
+    await gameRef.set(newGameData);
+    console.log(`Game created with ID: ${gameId}`);
+    joinAndSyncGame(gameId);
+  } catch (error) {
+    console.error("Error creating game:", error);
+    alert("Could not create game.");
+  }
+}
 
-  if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE && !board[y][x]) {
-    board[y][x] = currentPlayer;
-    moveCount++;
-    redraw();
+function joinAndSyncGame(gameId) {
+  currentGameId = gameId;
+  const gameRef = db.ref(`games/${gameId}`);
+  if (gameUnsubscribe) gameUnsubscribe();
 
-    const lastMove = { x, y, color: currentPlayer };
-    if (checkWinner(board, lastMove)) {
-      isGameOver = true;
-      setTimeout(() => {
-        showWinnerModal(currentPlayer);
-      }, 100);
-    } else if (moveCount === BOARD_SIZE * BOARD_SIZE) {
-      isGameOver = true;
-      setTimeout(() => {
-        showWinnerModal('draw');
-      }, 100);
-    } else {
-      currentPlayer = (currentPlayer === 'black') ? 'white' : 'black';
+  gameUnsubscribe = gameRef.on('value', (snapshot) => {
+    const gameData = snapshot.val();
+    if (gameData) {
+      const boardFromFirebase = convertFirebaseBoardToArray(gameData.board);
+      gameState = { ...gameData, board: boardFromFirebase };
+      if (gameState.players.black && gameState.players.black.uid === localPlayer.uid) myRole = 'black';
+      else if (gameState.players.white && gameState.players.white.uid === localPlayer.uid) myRole = 'white';
+      else myRole = 'spectator';
+      redraw(gameState.board);
+      if (gameState.isGameOver) showWinnerModal(gameState.winner);
     }
+  });
+  showView('game');
+}
+
+function handleBoardClick(event) {
+  if (!gameState || gameState.isGameOver || gameState.currentPlayer !== myRole) {
+    if (gameState && !gameState.isGameOver) console.log("Cannot make a move. It's " + gameState.currentPlayer + "'s turn, and your role is " + myRole);
+    return;
+  }
+  
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const canvasX = (event.clientX - rect.left) * scaleX;
+  const canvasY = (event.clientY - rect.top) * scaleY;
+  const x = Math.floor(canvasX / CELL_SIZE);
+  const y = Math.floor(canvasY / CELL_SIZE);
+
+  if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE && !gameState.board[y][x]) {
+    const { board, currentPlayer, moveCount } = gameState;
+    const newBoard = board.map(row => [...row]);
+    newBoard[y][x] = currentPlayer;
+    const lastMove = { x, y, color: currentPlayer };
+    
+    const updates = {
+      board: newBoard,
+      moveCount: moveCount + 1,
+      currentPlayer: currentPlayer === 'black' ? 'white' : 'black'
+    };
+
+    if (checkWinner(newBoard, lastMove)) {
+      updates.isGameOver = true;
+      updates.winner = currentPlayer;
+      updates.currentPlayer = null;
+    } else if (updates.moveCount === BOARD_SIZE * BOARD_SIZE) {
+      updates.isGameOver = true;
+      updates.winner = 'draw';
+      updates.currentPlayer = null;
+    }
+
+    db.ref(`games/${currentGameId}`).update(updates);
   }
 }
 
@@ -220,42 +255,47 @@ function handleBoardClick(event) {
 // INITIALIZATION
 // ===============================================
 function resetGame() {
+  if (gameUnsubscribe) gameUnsubscribe();
+  currentGameId = null;
+  myRole = null;
+  gameState = {};
+  modalOverlay.classList.add('hidden');
   showView('lobby');
-  console.log("Resetting game state...");
-  board = createBoard();
-  currentPlayer = 'black';
-  isGameOver = false;
-  moveCount = 0;
+  redraw(createBoard());
 }
 
 function setupApplication() {
   console.log("Setting up application event listeners...");
-  
-  // Setup all event listeners in one place
+  const savedGuestId = sessionStorage.getItem('guestUid');
+  if (savedGuestId) {
+    localPlayer.uid = savedGuestId;
+    const savedGuestName = sessionStorage.getItem('guestName');
+    if (savedGuestName) localPlayer.name = savedGuestName;
+  }
   canvas.addEventListener('click', handleBoardClick);
   rematchBtn.addEventListener('click', resetGame);
   newGameBtn.addEventListener('click', resetGame);
   createGameBtn.addEventListener('click', createGame);
-
   guestBtn.addEventListener('click', () => {
     const guestName = prompt("Please enter your name to play as a guest:", localPlayer.name);
     if (guestName) {
       localPlayer.name = guestName;
-      localPlayer.uid = `guest_${Date.now()}`;
+      sessionStorage.setItem('guestName', guestName);
+      if (!localPlayer.uid) {
+        localPlayer.uid = `guest_${Date.now()}`;
+        sessionStorage.setItem('guestUid', localPlayer.uid);
+      }
       userNameDisplay.textContent = localPlayer.name;
       userInfo.classList.remove('hidden');
       authButtons.classList.add('hidden');
       gameActions.classList.remove('hidden');
     }
   });
-
-  resetGame(); // Start the application
+  resetGame();
 }
 
-// This is the single entry point that starts our application.
 setupApplication();
 
-// This block is only for testing purposes
 try {
   module.exports = { createBoard, checkWinner, BOARD_SIZE };
 } catch (e) {}

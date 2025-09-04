@@ -11,7 +11,7 @@ body {
 
 canvas {
   border: 2px solid #333;
-  background-color: #f9d58a; /* Колір дошки */
+  background-color: #f9d58a;
 }
 
 /* --- General Purpose Classes --- */
@@ -20,7 +20,6 @@ canvas {
 }
 
 /* --- Button Styles --- */
-/* We create a generic button style we can apply to any button */
 button {
   font-size: 18px;
   padding: 10px 20px;
@@ -29,7 +28,7 @@ button {
   border: 2px solid #555;
   background-color: #f0f0f0;
   color: #333;
-  transition: all 0.2s ease; /* Smooth transition for hover effects */
+  transition: all 0.2s ease;
 }
 
 button:hover {
@@ -39,34 +38,16 @@ button:hover {
 
 .button-group {
   display: flex;
-  gap: 15px; /* Adds space between buttons */
+  gap: 15px;
   margin-top: 20px;
-}
-
-
-/* --- Modal Styles --- */
-#modal-overlay {
-  position: fixed; /* Stays in place even if you scroll */
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black */
-  display: flex;
   justify-content: center;
-  align-items: center;
-  z-index: 1000; /* Ensures it's on top of everything else */
 }
 
-#winner-modal {
-  background: white;
-  padding: 25px 40px;
-  border-radius: 10px;
-  text-align: center;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+.button-group.vertical {
+  flex-direction: column;
 }
 
-/* --- Стилі для Лобі --- */
+/* --- Lobby & Join Screen Styles --- */
 #lobby-container, #join-game-screen {
   background-color: white;
   padding: 30px 40px;
@@ -76,21 +57,15 @@ button:hover {
   width: 320px;
 }
 
-/* Модифікатор для вертикального розташування кнопок */
-.button-group.vertical {
-  flex-direction: column;
-}
-
 #user-info p {
   font-size: 1.1em;
   margin: 0 0 15px 0;
 }
 
-/* --- Стилі для списку відкритих ігор --- */
 #open-games-list {
   min-height: 200px;
   max-height: 400px;
-  overflow-y: auto; /* Додає скрол, якщо ігор багато */
+  overflow-y: auto;
   border: 1px solid #eee;
   border-radius: 5px;
   margin-bottom: 15px;
@@ -115,4 +90,26 @@ button:hover {
 
 .game-card .player-name {
   font-weight: bold;
+}
+
+/* --- Modal Styles --- */
+#modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+#winner-modal {
+  background: white;
+  padding: 25px 40px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
