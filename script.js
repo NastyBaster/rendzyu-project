@@ -5,6 +5,7 @@ const activeConfig = isDevelopment ? firebaseConfigTest : firebaseConfigProd;
 // --- ІНІЦІАЛІЗАЦІЯ FIREBASE ---
 const app = firebase.initializeApp(activeConfig);
 console.log(`Firebase is running in ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'} mode.`);
+const db = firebase.database();
 
 // ===============================================
 // GLOBAL CONSTANTS & DOM ELEMENTS
@@ -18,6 +19,17 @@ const modalOverlay = document.getElementById('modal-overlay');
 const winnerMessage = document.getElementById('winner-message');
 const rematchBtn = document.getElementById('rematch-btn');
 const newGameBtn = document.getElementById('new-game-btn');
+const lobbyContainer = document.getElementById('lobby-container');
+const authButtons = document.getElementById('auth-buttons');
+const guestBtn = document.getElementById('guest-btn');
+const gameActions = document.getElementById('game-actions');
+const createGameBtn = document.getElementById('create-game-btn');
+const joinGameBtn = document.getElementById('join-game-btn');
+const joinGameScreen = document.getElementById('join-game-screen');
+const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
+const gameContainer = document.getElementById('game-container');
+const userInfo = document.getElementById('user-info');
+const userNameDisplay = document.getElementById('user-name-display');
 
 canvas.width = 600;
 canvas.height = 600;
@@ -27,9 +39,10 @@ const CELL_SIZE = canvas.width / BOARD_SIZE;
 // GAME STATE
 // ===============================================
 let board;
-let currentPlayer = 'black';
-let isGameOver = false;
-let moveCount = 0;
+let currentPlayer;
+let isGameOver;
+let moveCount;
+let localPlayer = { uid: null, name: 'Guest' };
 
 // ===============================================
 // GAME LOGIC FUNCTIONS
@@ -62,6 +75,38 @@ function checkWinner(currentBoard, lastMove) {
   const antiDiagonalCount = countStones(1, -1) + countStones(-1, 1) + 1;
   if (antiDiagonalCount >= WINNING_LENGTH) return true;
   return false;
+}
+
+async function createGame() {
+  try {
+    const gameId = Math.floor(100 + Math.random() * 900).toString();
+    const gameRef = db.ref(`games/${gameId}`);
+
+    const newGameData = {
+      board: createBoard(),
+      currentPlayer: 'black',
+      isGameOver: false,
+      winner: null,
+      players: {
+        black: {
+          uid: localPlayer.uid,
+          name: localPlayer.name
+        },
+        white: null
+      },
+      status: 'waiting'
+    };
+
+    await gameRef.set(newGameData);
+    console.log(`Game created with ID: ${gameId}`);
+    
+    showView('game');
+    // We will add logic to listen for real-time updates next
+    
+  } catch (error) {
+    console.error("Error creating game:", error);
+    alert("Could not create game. Please check the console for errors.");
+  }
 }
 
 // ===============================================
@@ -122,6 +167,20 @@ function redraw() {
   drawStones();
 }
 
+function showView(viewName) {
+  lobbyContainer.classList.add('hidden');
+  joinGameScreen.classList.add('hidden');
+  gameContainer.classList.add('hidden');
+
+  if (viewName === 'lobby') {
+    lobbyContainer.classList.remove('hidden');
+  } else if (viewName === 'join') {
+    joinGameScreen.classList.remove('hidden');
+  } else if (viewName === 'game') {
+    gameContainer.classList.remove('hidden');
+  }
+}
+
 // ===============================================
 // INTERACTION
 // ===============================================
@@ -161,21 +220,36 @@ function handleBoardClick(event) {
 // INITIALIZATION
 // ===============================================
 function resetGame() {
-  modalOverlay.classList.add('hidden');
+  showView('lobby');
   console.log("Resetting game state...");
   board = createBoard();
   currentPlayer = 'black';
   isGameOver = false;
   moveCount = 0;
-  redraw();
 }
 
 function setupApplication() {
   console.log("Setting up application event listeners...");
+  
+  // Setup all event listeners in one place
   canvas.addEventListener('click', handleBoardClick);
   rematchBtn.addEventListener('click', resetGame);
   newGameBtn.addEventListener('click', resetGame);
-  resetGame();
+  createGameBtn.addEventListener('click', createGame);
+
+  guestBtn.addEventListener('click', () => {
+    const guestName = prompt("Please enter your name to play as a guest:", localPlayer.name);
+    if (guestName) {
+      localPlayer.name = guestName;
+      localPlayer.uid = `guest_${Date.now()}`;
+      userNameDisplay.textContent = localPlayer.name;
+      userInfo.classList.remove('hidden');
+      authButtons.classList.add('hidden');
+      gameActions.classList.remove('hidden');
+    }
+  });
+
+  resetGame(); // Start the application
 }
 
 // This is the single entry point that starts our application.

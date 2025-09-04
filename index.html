@@ -9,33 +9,72 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
-  <h1>Проєкт Рендзю: Етап 1</h1>
-  <canvas id="game-board"></canvas>
+  <!-- ======================= ЛОБІ ======================= -->
+  <div id="lobby-container">
+    <h1>Рендзю Онлайн</h1>
+    
+    <!-- Блок для інформації про користувача (спочатку прихований) -->
+    <div id="user-info" class="hidden">
+      <p>Вітаємо, <strong id="user-name-display">Гість</strong>!</p>
+    </div>
 
-  <!-- Firebase App (обов'язково) -->
+    <!-- Блок для кнопок входу/реєстрації -->
+    <div id="auth-buttons" class="button-group vertical">
+      <button id="login-btn">Вхід</button>
+      <button id="register-btn">Реєстрація</button>
+      <button id="guest-btn">Грати як гість</button>
+    </div>
+
+    <!-- Блок для дій з грою (спочатку прихований) -->
+    <div id="game-actions" class="hidden button-group vertical">
+      <button id="create-game-btn">Створити гру</button>
+      <button id="join-game-btn">Приєднатися до гри</button>
+    </div>
+  </div>
+
+  <!-- ======================= ЕКРАН ПРИЄДНАННЯ ДО ГРИ ======================= -->
+  <div id="join-game-screen" class="hidden">
+    <h2>Відкриті ігри</h2>
+    <div id="open-games-list">
+      <!-- Сюди JavaScript буде динамічно додавати ігри -->
+      <p>Завантаження списку ігор...</p>
+    </div>
+    <button id="back-to-lobby-btn">Назад</button>
+  </div>
+
+
+  <!-- ======================= ІГРОВЕ ПОЛЕ ======================= -->
+  <!-- Ми обгортаємо всю гру в один контейнер і ховаємо його -->
+  <div id="game-container" class="hidden">
+    <canvas id="game-board"></canvas>
+    <!-- Сюди ми пізніше можемо додати індикатори ходу, таймери і т.д. -->
+  </div>
+
+
+  <!-- ======================= МОДАЛЬНЕ ВІКНО ПЕРЕМОЖЦЯ ======================= -->
+  <div id="modal-overlay" class="hidden">
+    <div id="winner-modal">
+      <h2 id="winner-message"></h2>
+      <div class="button-group">
+        <button id="rematch-btn">Play Again</button>
+        <button id="new-game-btn">New Game</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ... ваші теги <script> ... -->
+
+      <!-- Firebase App (обов'язково) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <!-- Firebase Realtime Database (ми будемо її використовувати) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <!-- Firebase Authentication (для входу користувачів) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
-<!-- Підключаємо наші конфігурації ПЕРЕД основним скриптом -->
+  <!-- Підключаємо наші конфігурації ПЕРЕД основним скриптом -->
   <script src="config.js"></script>
   
   <!-- Наш основний скрипт (ОДИН РАЗ І З DEFER) -->
   <script src="script.js" defer></script>
-
-  <!-- This is the overlay that will dim the background -->
-<div id="modal-overlay" class="hidden">
-  <!-- This is the actual modal box -->
-  <div id="winner-modal">
-    <h2 id="winner-message"></h2>
-    <div class="button-group">
-      <button id="rematch-btn">Play Again</button>
-      <button id="new-game-btn">New Game</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>

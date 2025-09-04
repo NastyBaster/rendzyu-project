@@ -65,3 +65,54 @@ button:hover {
   text-align: center;
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
+
+/* --- Стилі для Лобі --- */
+#lobby-container, #join-game-screen {
+  background-color: white;
+  padding: 30px 40px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  text-align: center;
+  width: 320px;
+}
+
+/* Модифікатор для вертикального розташування кнопок */
+.button-group.vertical {
+  flex-direction: column;
+}
+
+#user-info p {
+  font-size: 1.1em;
+  margin: 0 0 15px 0;
+}
+
+/* --- Стилі для списку відкритих ігор --- */
+#open-games-list {
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto; /* Додає скрол, якщо ігор багато */
+  border: 1px solid #eee;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  padding: 10px;
+}
+
+.game-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.game-card:hover {
+  background-color: #f7f7f7;
+}
+
+.game-card .player-name {
+  font-weight: bold;
+}
