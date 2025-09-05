@@ -2,10 +2,10 @@
 /* === БАЗОВІ СТИЛІ === */
 /* =============================================== */
 html {
-  box-sizing: border-box; /* Найкраща практика для розрахунку розмірів */
+  box-sizing: border-box;
 }
 *, *:before, *:after {
-  box-sizing: inherit; /* Успадковуємо box-sizing для всіх елементів */
+  box-sizing: inherit;
 }
 
 body {
@@ -14,11 +14,10 @@ body {
   margin: 0;
   background-color: #f0f0f0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 10px; /* Відступи за замовчуванням для мобільних */
+  padding: 10px;
 }
 
 .hidden {
@@ -37,27 +36,20 @@ body {
 }
 
 #game-container {
-  display: none; /* Прихований за замовчуванням */
+  display: none;
   width: 100%;
   height: 100%;
-  display: flex;
   justify-content: center;
   align-items: center;
 }
 
-body[data-view="game"] #game-container {
-  display: flex;
-}
-
+body[data-view="game"] #game-container { display: flex; }
 body[data-view="lobby"] #lobby-container,
-body[data-view="join"] #join-game-screen {
-  display: block;
-}
+body[data-view="join"] #join-game-screen { display: block; }
 
 canvas {
   background: #f9d58a;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-  /* Розміри повністю контролюються JavaScript */
 }
 
 /* --- Кнопки та інше --- */
@@ -70,14 +62,29 @@ button:hover { background-color: #ddd; border-color: #000; }
 .game-card { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: background-color 0.2s ease; }
 .game-card:hover { background-color: #f7f7f7; }
 .game-card .player-name { font-weight: bold; }
-#modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-#winner-modal { background: white; padding: 25px 40px; border-radius: 10px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
 
-/* =================================================================== */
+/* --- Модальні вікна --- */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex; justify-content: center; align-items: center; z-index: 1000;
+}
+#winner-modal, #guest-name-modal {
+  background: white; padding: 25px 40px; border-radius: 10px;
+  text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  width: 100%; max-width: 320px; box-sizing: border-box;
+}
+#guest-name-modal input {
+  width: 100%; padding: 10px; font-size: 18px;
+  border: 1px solid #ccc; border-radius: 5px;
+  box-sizing: border-box; margin-top: 10px;
+}
+
+/* =============================================== */
 /* === СТИЛІ ДЛЯ ВЕЛИКИХ ЕКРАНІВ (Desktop) === */
-/* =================================================================== */
+/* =============================================== */
 @media (min-width: 769px) {
   body {
-    padding: 0; /* Прибираємо відступи на десктопі, щоб не було скролу */
+    padding: 0;
   }
 }

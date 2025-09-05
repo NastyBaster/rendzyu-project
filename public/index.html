@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Рендзю</title>
-  <!-- Підключаємо наш файл стилів -->
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
@@ -12,20 +11,14 @@
   <!-- ======================= ЛОБІ ======================= -->
   <div id="lobby-container">
     <h1>Рендзю Онлайн</h1>
-    
-    <!-- Блок для інформації про користувача (спочатку прихований) -->
     <div id="user-info" class="hidden">
       <p>Вітаємо, <strong id="user-name-display">Гість</strong>!</p>
     </div>
-
-    <!-- Блок для кнопок входу/реєстрації -->
     <div id="auth-buttons" class="button-group vertical">
       <button id="login-btn">Вхід</button>
       <button id="register-btn">Реєстрація</button>
       <button id="guest-btn">Грати як гість</button>
     </div>
-
-    <!-- Блок для дій з грою (спочатку прихований) -->
     <div id="game-actions" class="hidden button-group vertical">
       <button id="create-game-btn">Створити гру</button>
       <button id="join-game-btn">Приєднатися до гри</button>
@@ -36,23 +29,18 @@
   <div id="join-game-screen" class="hidden">
     <h2>Відкриті ігри</h2>
     <div id="open-games-list">
-      <!-- Сюди JavaScript буде динамічно додавати ігри -->
       <p>Завантаження списку ігор...</p>
     </div>
     <button id="back-to-lobby-btn">Назад</button>
   </div>
 
-
   <!-- ======================= ІГРОВЕ ПОЛЕ ======================= -->
-  <!-- Ми обгортаємо всю гру в один контейнер і ховаємо його -->
   <div id="game-container" class="hidden">
     <canvas id="game-board"></canvas>
-    <!-- Сюди ми пізніше можемо додати індикатори ходу, таймери і т.д. -->
   </div>
 
-
   <!-- ======================= МОДАЛЬНЕ ВІКНО ПЕРЕМОЖЦЯ ======================= -->
-  <div id="modal-overlay" class="hidden">
+  <div id="modal-overlay" class="modal-overlay hidden">
     <div id="winner-modal">
       <h2 id="winner-message"></h2>
       <div class="button-group">
@@ -62,18 +50,27 @@
     </div>
   </div>
 
-  <!-- ... ваші теги <script> ... -->
+  <!-- ======================= МОДАЛЬНЕ ВІКНО ДЛЯ ІМЕНІ ГОСТЯ ======================= -->
+  <div id="guest-name-modal-overlay" class="modal-overlay hidden">
+    <div id="guest-name-modal">
+      <h2>Введіть ваше ім'я</h2>
+      <form id="guest-name-form">
+        <input type="text" id="guest-name-input" placeholder="Ваше ім'я..." required>
+        <div class="button-group">
+          <button type="submit">OK</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-      <!-- Firebase App (обов'язково) -->
+  <!-- Firebase App (обов'язково) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <!-- Firebase Realtime Database (ми будемо її використовувати) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <!-- Firebase Authentication (для входу користувачів) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-
   <!-- Підключаємо наші конфігурації ПЕРЕД основним скриптом -->
   <script src="config.js"></script>
-  
   <!-- Наш основний скрипт (ОДИН РАЗ І З DEFER) -->
   <script src="script.js" defer></script>
 </body>
