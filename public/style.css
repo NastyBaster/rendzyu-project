@@ -1,115 +1,83 @@
+/* =============================================== */
+/* === БАЗОВІ СТИЛІ === */
+/* =============================================== */
+html {
+  box-sizing: border-box; /* Найкраща практика для розрахунку розмірів */
+}
+*, *:before, *:after {
+  box-sizing: inherit; /* Успадковуємо box-sizing для всіх елементів */
+}
+
 body {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
   background-color: #f0f0f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  margin: 0;
-  font-family: sans-serif;
+  padding: 10px; /* Відступи за замовчуванням для мобільних */
 }
 
-canvas {
-  border: 2px solid #333;
-  background-color: #f9d58a;
-}
-
-/* --- General Purpose Classes --- */
 .hidden {
   display: none !important;
 }
 
-/* --- Button Styles --- */
-button {
-  font-size: 18px;
-  padding: 10px 20px;
-  cursor: pointer;
-  border-radius: 8px;
-  border: 2px solid #555;
-  background-color: #f0f0f0;
-  color: #333;
-  transition: all 0.2s ease;
-}
-
-button:hover {
-  background-color: #ddd;
-  border-color: #000;
-}
-
-.button-group {
-  display: flex;
-  gap: 15px;
-  margin-top: 20px;
-  justify-content: center;
-}
-
-.button-group.vertical {
-  flex-direction: column;
-}
-
-/* --- Lobby & Join Screen Styles --- */
+/* --- Контейнери --- */
 #lobby-container, #join-game-screen {
   background-color: white;
   padding: 30px 40px;
   border-radius: 10px;
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
   text-align: center;
-  width: 320px;
+  width: 100%;
+  max-width: 360px;
 }
 
-#user-info p {
-  font-size: 1.1em;
-  margin: 0 0 15px 0;
-}
-
-#open-games-list {
-  min-height: 200px;
-  max-height: 400px;
-  overflow-y: auto;
-  border: 1px solid #eee;
-  border-radius: 5px;
-  margin-bottom: 15px;
-  padding: 10px;
-}
-
-.game-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.game-card:hover {
-  background-color: #f7f7f7;
-}
-
-.game-card .player-name {
-  font-weight: bold;
-}
-
-/* --- Modal Styles --- */
-#modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
+#game-container {
+  display: none; /* Прихований за замовчуванням */
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
 }
 
-#winner-modal {
-  background: white;
-  padding: 25px 40px;
-  border-radius: 10px;
-  text-align: center;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+body[data-view="game"] #game-container {
+  display: flex;
+}
+
+body[data-view="lobby"] #lobby-container,
+body[data-view="join"] #join-game-screen {
+  display: block;
+}
+
+canvas {
+  background: #f9d58a;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  /* Розміри повністю контролюються JavaScript */
+}
+
+/* --- Кнопки та інше --- */
+button { font-size: 18px; padding: 10px 20px; cursor: pointer; border-radius: 8px; border: 2px solid #555; background-color: #f0f0f0; color: #333; transition: all 0.2s ease; width: 100%; box-sizing: border-box;}
+button:hover { background-color: #ddd; border-color: #000; }
+.button-group { display: flex; gap: 15px; margin-top: 20px; justify-content: center; }
+.button-group.vertical { flex-direction: column; }
+#user-info p { font-size: 1.1em; margin: 0 0 15px 0; }
+#open-games-list { min-height: 200px; max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 5px; margin-bottom: 15px; padding: 10px; }
+.game-card { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: background-color 0.2s ease; }
+.game-card:hover { background-color: #f7f7f7; }
+.game-card .player-name { font-weight: bold; }
+#modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+#winner-modal { background: white; padding: 25px 40px; border-radius: 10px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+
+/* =================================================================== */
+/* === СТИЛІ ДЛЯ ВЕЛИКИХ ЕКРАНІВ (Desktop) === */
+/* =================================================================== */
+@media (min-width: 769px) {
+  body {
+    padding: 0; /* Прибираємо відступи на десктопі, щоб не було скролу */
+  }
 }
