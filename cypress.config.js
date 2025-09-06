@@ -1,13 +1,13 @@
-// cypress.config.js
+// ==========================================================
+// CYPRESS.CONFIG.JS - ФІНАЛЬНА, ВИПРАВЛЕНА ВЕРСІЯ
+// ==========================================================
 
 const { defineConfig } = require('cypress');
 const admin = require('firebase-admin');
 const serviceAccount = require('./firebase-service-account.json');
 
-// Ініціалізація Firebase Admin SDK
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  // Вставте сюди URL вашої Realtime Database
   databaseURL: 'https://rendzyu-test-default-rtdb.europe-west1.firebasedatabase.app',
 });
 
@@ -15,32 +15,44 @@ const db = admin.database();
 
 module.exports = defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:5173', // Переконайтеся, що порт правильний
+    baseUrl: 'http://localhost:5173',
     setupNodeEvents(on, config) {
       on('task', {
-        // Завдання для очищення бази даних перед тестом
         clearGames() {
           return db.ref('games').remove().then(() => null);
         },
-
-        // Завдання для симуляції приєднання Гравця 2 до гри
         joinGame({ gameId, playerName }) {
           const updates = {
-            [`games/${gameId}/player2`]: { name: playerName, uid: 'player2-uid' },
-            [`games/${gameId}/status`]: 'playing',
-            [`games/${gameId}/currentTurn`]: 'player1', // Гра починається з ходу гравця 1
+            [`games/${gameId}/players/white`]: { name: playerName, uid: 'player2-uid' },
+            [`games/${gameId}/status`]: 'in_progress',
           };
           return db.ref().update(updates).then(() => null);
         },
-
-        // Завдання для симуляції ходу Гравця 2
-        makeMove({ gameId, cellId, nextTurn }) {
-          const updates = {
-            [`games/${gameId}/board/${cellId}`]: 'O', // Гравець 2 грає "O"
-            [`games/${gameId}/currentTurn`]: nextTurn,
-          };
-          return db.ref().update(updates).then(() => null);
+        makeMove({ gameId, cellId }) {
+          const [y, x] = cellId.split('-').map(Number);
+          
+          return db.ref(`games/${gameId}`).transaction((gameData) => {
+            if (gameData) {
+              // *** КЛЮЧОВЕ ВИПРАВЛЕННЯ ***
+              // Переконуємося, що дошка і рядок існують
+              if (!gameData.board) {
+                // Створюємо дошку, якщо її немає (малоймовірно, але безпечно)
+                gameData.board = Array.from({ length: 15 }, () => Array(15).fill(null));
+              }
+              if (!gameData.board[y]) {
+                gameData.board[y] = Array(15).fill(null);
+              }
+              
+              gameData.board[y][x] = 'white'; // Гравець 2 грає білими
+              gameData.currentPlayer = 'black'; // Повертаємо хід чорним
+              gameData.moveCount++;
+            }
+            return gameData;
+          }).then(() => null);
         },
+        getGameData(gameId) {
+          return db.ref(`games/${gameId}`).get().then(snapshot => snapshot.val());
+        }
       });
     },
   },
