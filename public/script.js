@@ -1,5 +1,5 @@
 // --- ЛОГІКА ВИБОРУ СЕРЕДОВЩА ---
-const isDevelopment = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isDevelopment = window.location.hostname === 'rendzyu-test.web.app' || window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const activeConfig = isDevelopment ? firebaseConfigTest : firebaseConfigProd;
 
 // --- ІНІЦІАЛІЗАЦІЯ FIREBASE ---
@@ -30,6 +30,7 @@ const userNameDisplay = document.getElementById('user-name-display');
 const guestNameModalOverlay = document.getElementById('guest-name-modal-overlay');
 const guestNameForm = document.getElementById('guest-name-form');
 const guestNameInput = document.getElementById('guest-name-input');
+const openGamesList = document.getElementById('open-games-list');
 
 // ===============================================
 // GLOBAL CONSTANTS
@@ -46,37 +47,315 @@ const CELL_SIZE = canvas.width / BOARD_SIZE;
 let localPlayer = { uid: null, name: 'Guest' };
 let currentGameId = null;
 let gameUnsubscribe = null;
+let openGamesUnsubscribe = null;
 let myRole = null;
-let gameState = {};
 
 // ===============================================
 // PURE LOGIC FUNCTIONS
 // ===============================================
-function createBoard() { /* ... тіло функції ... */ }
-function checkWinner(board, lastMove) { /* ... тіло функції ... */ }
-function convertFirebaseBoardToArray(firebaseBoard) { /* ... тіло функції ... */ }
+function createBoard() {
+  return Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
+}
+
+function checkWinner(board, lastMove) {
+  const { x, y, color } = lastMove;
+  const countStones = (dx, dy) => {
+    let count = 0;
+    for (let i = 1; i < WINNING_LENGTH; i++) {
+      const newX = x + i * dx;
+      const newY = y + i * dy;
+      if (newX >= 0 && newX < BOARD_SIZE && newY >= 0 && newY < BOARD_SIZE && board[newY][newX] === color) {
+        count++;
+      } else { break; }
+    }
+    return count;
+  };
+  const horizontalCount = countStones(1, 0) + countStones(-1, 0) + 1;
+  if (horizontalCount >= WINNING_LENGTH) return true;
+  const verticalCount = countStones(0, 1) + countStones(0, -1) + 1;
+  if (verticalCount >= WINNING_LENGTH) return true;
+  const diagonalCount = countStones(1, 1) + countStones(-1, -1) + 1;
+  if (diagonalCount >= WINNING_LENGTH) return true;
+  const antiDiagonalCount = countStones(1, -1) + countStones(-1, 1) + 1;
+  if (antiDiagonalCount >= WINNING_LENGTH) return true;
+  return false;
+}
+
+function convertFirebaseBoardToArray(firebaseBoard) {
+  // Якщо даних з Firebase взагалі немає, створюємо нову порожню дошку.
+  if (!firebaseBoard) {
+    return createBoard();
+  }
+
+  const newBoard = createBoard(); // Починаємо з ідеально чистої дошки 15x15
+  
+  // Проходимо по кожній клітинці нашої ідеальної дошки
+  for (let y = 0; y < BOARD_SIZE; y++) {
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      // Перевіряємо, чи існують дані для цієї клітинки у даних з Firebase
+      if (firebaseBoard[y] && firebaseBoard[y][x]) {
+        // Якщо так, копіюємо значення
+        newBoard[y][x] = firebaseBoard[y][x];
+      }
+      // Якщо ні, в newBoard вже буде null, що є правильно.
+    }
+  }
+  
+  return newBoard;
+}
 
 // ===============================================
 // UI & DRAWING FUNCTIONS
 // ===============================================
-function drawBoard() { /* ... тіло функції ... */ }
-function drawStones(board) { /* ... тіло функції ... */ }
-function redraw(board) { /* ... тіло функції ... */ }
-function showWinnerModal(winner) { /* ... тіло функції ... */ }
-function resizeCanvas() { /* ... тіло функції ... */ }
-function showView(viewName) { /* ... тіло функції ... */ }
+function drawBoard() {
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < BOARD_SIZE; i++) {
+    ctx.beginPath();
+    ctx.moveTo(CELL_SIZE * (i + 0.5), CELL_SIZE * 0.5);
+    ctx.lineTo(CELL_SIZE * (i + 0.5), canvas.height - CELL_SIZE * 0.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(CELL_SIZE * 0.5, CELL_SIZE * (i + 0.5));
+    ctx.lineTo(canvas.width - CELL_SIZE * 0.5, CELL_SIZE * (i + 0.5));
+    ctx.stroke();
+  }
+}
+
+function drawStones(board) {
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+  for (let y = 0; y < BOARD_SIZE; y++) {
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      const stone = board[y][x];
+      if (stone) {
+        const canvasX = CELL_SIZE * (x + 0.5);
+        const canvasY = CELL_SIZE * (y + 0.5);
+        const radius = CELL_SIZE * 0.4;
+        ctx.beginPath();
+        ctx.arc(canvasX, canvasY, radius, 0, Math.PI * 2);
+        ctx.fillStyle = stone;
+        ctx.fill();
+      }
+    }
+  }
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+}
+
+function redraw(board) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBoard();
+  if (board) {
+    drawStones(board);
+  }
+}
+
+function showWinnerModal(winner) {
+  if (winner === 'draw') {
+    winnerMessage.textContent = 'It\'s a Draw!';
+  } else {
+    winnerMessage.textContent = `${winner.toUpperCase()} wins!`;
+  }
+  modalOverlay.classList.remove('hidden');
+}
+
+function resizeCanvas() {
+  const container = document.body;
+  const size = Math.min(container.clientWidth, container.clientHeight) * 0.9;
+  canvas.style.width = `${size}px`;
+  canvas.style.height = `${size}px`;
+}
+
+function showView(viewName) {
+  lobbyContainer.classList.add('hidden');
+  joinGameScreen.classList.add('hidden');
+  gameContainer.classList.add('hidden');
+  document.body.removeAttribute('data-view');
+  if (viewName === 'lobby') {
+    lobbyContainer.classList.remove('hidden');
+    document.body.setAttribute('data-view', 'lobby');
+  } else if (viewName === 'join') {
+    joinGameScreen.classList.remove('hidden');
+    document.body.setAttribute('data-view', 'join');
+  } else if (viewName === 'game') {
+    gameContainer.classList.remove('hidden');
+    document.body.setAttribute('data-view', 'game');
+    resizeCanvas();
+  }
+}
 
 // ===============================================
 // FIREBASE & GAME FLOW
 // ===============================================
-async function createGame() { /* ... тіло функції ... */ }
-function joinAndSyncGame(gameId) { /* ... тіло функції ... */ }
-function handleBoardClick(event) { /* ... тіло функції ... */ }
+async function createGame() {
+  if (!localPlayer.uid) {
+    alert("Please enter a guest name first!");
+    return;
+  }
+  createGameBtn.disabled = true;
+  try {
+    const gameId = Math.floor(100 + Math.random() * 900).toString();
+    const gameRef = db.ref(`games/${gameId}`);
+    const newGameData = {
+      board: createBoard(),
+      currentPlayer: 'black',
+      isGameOver: false,
+      winner: null,
+      players: { black: { uid: localPlayer.uid, name: localPlayer.name }, white: null },
+      status: 'waiting',
+      moveCount: 0
+    };
+    const openGameRef = db.ref(`open_games/${gameId}`);
+    await gameRef.set(newGameData);
+    await openGameRef.set({
+      creatorName: localPlayer.name,
+      creatorUid: localPlayer.uid,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    console.log(`Game created with ID: ${gameId}`);
+    joinAndSyncGame(gameId);
+  } catch (error) {
+    console.error("Error creating game:", error);
+    alert("Could not create game.");
+  } finally {
+    createGameBtn.disabled = false;
+  }
+}
+
+async function joinGame(gameId) {
+  if (!localPlayer.uid) {
+    alert("Please enter a guest name first!");
+    return;
+  }
+  const gameRef = db.ref(`games/${gameId}`);
+  const openGameRef = db.ref(`open_games/${gameId}`);
+  try {
+    await gameRef.update({
+      'players/white': { uid: localPlayer.uid, name: localPlayer.name },
+      'status': 'in_progress'
+    });
+    await openGameRef.remove();
+    console.log(`Successfully joined game: ${gameId}`);
+    joinAndSyncGame(gameId);
+  } catch (error) {
+    console.error("Error joining game:", error);
+    alert("Could not join the game.");
+  }
+}
+
+function joinAndSyncGame(gameId) {
+  if (gameUnsubscribe) gameUnsubscribe();
+  currentGameId = gameId;
+  const gameRef = db.ref(`games/${gameId}`);
+  gameUnsubscribe = gameRef.on('value', (snapshot) => {
+    if (!snapshot.exists()) {
+      console.log(`Game ${gameId} was deleted.`);
+      resetGame();
+      alert("The game was closed by the host.");
+      return;
+    }
+    const gameData = snapshot.val();
+    const board = convertFirebaseBoardToArray(gameData.board);
+    if (gameData.players.black && gameData.players.black.uid === localPlayer.uid) myRole = 'black';
+    else if (gameData.players.white && gameData.players.white.uid === localPlayer.uid) myRole = 'white';
+    else myRole = 'spectator';
+    redraw(board);
+    if (gameData.isGameOver) {
+      showWinnerModal(gameData.winner);
+    }
+  });
+  showView('game');
+}
+
+function handleBoardClick(event) {
+  if (!currentGameId) return;
+  const gameRef = db.ref(`games/${currentGameId}`);
+  gameRef.once('value', (snapshot) => {
+    const gameData = snapshot.val();
+    if (!gameData || gameData.isGameOver || gameData.status === 'waiting' || gameData.currentPlayer !== myRole) {
+      if (gameData && !gameData.isGameOver) {
+        console.log("Cannot make a move.");
+      }
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const canvasX = (event.clientX - rect.left) * scaleX;
+    const canvasY = (event.clientY - rect.top) * scaleY;
+    const x = Math.floor(canvasX / CELL_SIZE);
+    const y = Math.floor(canvasY / CELL_SIZE);
+    const board = convertFirebaseBoardToArray(gameData.board);
+    if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE && !board[y][x]) {
+      const newBoard = board.map(row => [...row]);
+      newBoard[y][x] = gameData.currentPlayer;
+      const lastMove = { x, y, color: gameData.currentPlayer };
+      const updates = {
+        board: newBoard,
+        moveCount: gameData.moveCount + 1,
+        currentPlayer: gameData.currentPlayer === 'black' ? 'white' : 'black'
+      };
+      if (checkWinner(newBoard, lastMove)) {
+        updates.isGameOver = true;
+        updates.winner = gameData.currentPlayer;
+        updates.currentPlayer = null;
+      } else if (updates.moveCount === BOARD_SIZE * BOARD_SIZE) {
+        updates.isGameOver = true;
+        updates.winner = 'draw';
+        updates.currentPlayer = null;
+      }
+      gameRef.update(updates);
+    }
+  });
+}
+
+function listenForOpenGames() {
+  const openGamesRef = db.ref('open_games');
+  if (openGamesUnsubscribe) openGamesUnsubscribe();
+  openGamesUnsubscribe = openGamesRef.on('value', (snapshot) => {
+    const games = snapshot.val();
+    openGamesList.innerHTML = '';
+    let gamesFound = false;
+    if (games) {
+      Object.entries(games).forEach(([gameId, gameData]) => {
+        if (gameData.creatorUid === localPlayer.uid) return;
+        gamesFound = true;
+        const gameCard = document.createElement('div');
+        gameCard.className = 'game-card';
+        gameCard.innerHTML = `
+          <span class="player-name">${gameData.creatorName}'s Game</span>
+          <button class="join-btn">Join</button>
+        `;
+        const joinButton = gameCard.querySelector('.join-btn');
+        joinButton.addEventListener('click', () => joinGame(gameId));
+        openGamesList.appendChild(gameCard);
+      });
+    }
+    if (!gamesFound) {
+      openGamesList.innerHTML = '<p>Немає відкритих ігор. Створіть свою!</p>';
+    }
+  });
+}
 
 // ===============================================
 // INITIALIZATION
 // ===============================================
-function resetGame() { /* ... тіло функції ... */ }
+function resetGame() {
+  if (gameUnsubscribe) gameUnsubscribe();
+  if (openGamesUnsubscribe) openGamesUnsubscribe();
+  currentGameId = null;
+  myRole = null;
+  gameUnsubscribe = null;
+  openGamesUnsubscribe = null;
+  modalOverlay.classList.add('hidden');
+  showView('lobby');
+  redraw(createBoard());
+}
 
 function setupApplication() {
   console.log("Setting up application event listeners...");
@@ -92,6 +371,12 @@ function setupApplication() {
   rematchBtn.addEventListener('click', resetGame);
   newGameBtn.addEventListener('click', resetGame);
   createGameBtn.addEventListener('click', createGame);
+  backToLobbyBtn.addEventListener('click', () => showView('lobby'));
+
+  joinGameBtn.addEventListener('click', () => {
+    showView('join');
+    listenForOpenGames();
+  });
 
   guestBtn.addEventListener('click', () => {
     guestNameInput.value = localPlayer.name;
@@ -125,18 +410,3 @@ setupApplication();
 try {
   module.exports = { createBoard, checkWinner, BOARD_SIZE };
 } catch (e) {}
-
-// --- ТІЛА ФУНКЦІЙ ---
-function createBoard() { return Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null)); }
-function checkWinner(board, lastMove) { const { x, y, color } = lastMove; const countStones = (dx, dy) => { let count = 0; for (let i = 1; i < WINNING_LENGTH; i++) { const newX = x + i * dx; const newY = y + i * dy; if (newX >= 0 && newX < BOARD_SIZE && newY >= 0 && newY < BOARD_SIZE && board[newY][newX] === color) { count++; } else { break; } } return count; }; const horizontalCount = countStones(1, 0) + countStones(-1, 0) + 1; if (horizontalCount >= WINNING_LENGTH) return true; const verticalCount = countStones(0, 1) + countStones(0, -1) + 1; if (verticalCount >= WINNING_LENGTH) return true; const diagonalCount = countStones(1, 1) + countStones(-1, -1) + 1; if (diagonalCount >= WINNING_LENGTH) return true; const antiDiagonalCount = countStones(1, -1) + countStones(-1, 1) + 1; if (antiDiagonalCount >= WINNING_LENGTH) return true; return false; }
-function convertFirebaseBoardToArray(firebaseBoard) { if (!firebaseBoard) return createBoard(); if (Array.isArray(firebaseBoard)) return firebaseBoard; const boardArray = []; for (let y = 0; y < BOARD_SIZE; y++) { boardArray[y] = []; for (let x = 0; x < BOARD_SIZE; x++) { const cellValue = firebaseBoard[y] ? firebaseBoard[y][x] : null; boardArray[y][x] = cellValue || null; } } return boardArray; }
-function drawBoard() { ctx.strokeStyle = '#555'; ctx.lineWidth = 1; for (let i = 0; i < BOARD_SIZE; i++) { ctx.beginPath(); ctx.moveTo(CELL_SIZE * (i + 0.5), CELL_SIZE * 0.5); ctx.lineTo(CELL_SIZE * (i + 0.5), canvas.height - CELL_SIZE * 0.5); ctx.stroke(); ctx.beginPath(); ctx.moveTo(CELL_SIZE * 0.5, CELL_SIZE * (i + 0.5)); ctx.lineTo(canvas.width - CELL_SIZE * 0.5, CELL_SIZE * (i + 0.5)); ctx.stroke(); } }
-function drawStones(board) { ctx.shadowColor = 'rgba(0, 0, 0, 0.4)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; for (let y = 0; y < BOARD_SIZE; y++) { for (let x = 0; x < BOARD_SIZE; x++) { const stone = board[y][x]; if (stone) { const canvasX = CELL_SIZE * (x + 0.5); const canvasY = CELL_SIZE * (y + 0.5); const radius = CELL_SIZE * 0.4; ctx.beginPath(); ctx.arc(canvasX, canvasY, radius, 0, Math.PI * 2); ctx.fillStyle = stone; ctx.fill(); } } } ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; }
-function redraw(board) { ctx.clearRect(0, 0, canvas.width, canvas.height); drawBoard(); if (board) { drawStones(board); } }
-function showWinnerModal(winner) { if (winner === 'draw') { winnerMessage.textContent = 'It\'s a Draw!'; } else { winnerMessage.textContent = `${winner.toUpperCase()} wins!`; } modalOverlay.classList.remove('hidden'); }
-function resizeCanvas() { const container = document.body; const size = Math.min(container.clientWidth, container.clientHeight) * 0.9; canvas.style.width = `${size}px`; canvas.style.height = `${size}px`; }
-function showView(viewName) { lobbyContainer.classList.add('hidden'); joinGameScreen.classList.add('hidden'); gameContainer.classList.add('hidden'); document.body.removeAttribute('data-view'); if (viewName === 'lobby') { lobbyContainer.classList.remove('hidden'); document.body.setAttribute('data-view', 'lobby'); } else if (viewName === 'join') { joinGameScreen.classList.remove('hidden'); document.body.setAttribute('data-view', 'join'); } else if (viewName === 'game') { gameContainer.classList.remove('hidden'); document.body.setAttribute('data-view', 'game'); resizeCanvas(); } }
-async function createGame() { if (!localPlayer.uid) { alert("Please enter a guest name first!"); return; } try { const gameId = Math.floor(100 + Math.random() * 900).toString(); const gameRef = db.ref(`games/${gameId}`); const newGameData = { board: createBoard(), currentPlayer: 'black', isGameOver: false, winner: null, players: { black: { uid: localPlayer.uid, name: localPlayer.name }, white: null }, status: 'waiting', moveCount: 0 }; await gameRef.set(newGameData); console.log(`Game created with ID: ${gameId}`); joinAndSyncGame(gameId); } catch (error) { console.error("Error creating game:", error); alert("Could not create game."); } }
-function joinAndSyncGame(gameId) { currentGameId = gameId; const gameRef = db.ref(`games/${gameId}`); if (gameUnsubscribe) gameUnsubscribe(); gameUnsubscribe = gameRef.on('value', (snapshot) => { const gameData = snapshot.val(); if (gameData) { const boardFromFirebase = convertFirebaseBoardToArray(gameData.board); gameState = { ...gameData, board: boardFromFirebase }; if (gameState.players.black && gameState.players.black.uid === localPlayer.uid) myRole = 'black'; else if (gameState.players.white && gameState.players.white.uid === localPlayer.uid) myRole = 'white'; else myRole = 'spectator'; redraw(gameState.board); if (gameState.isGameOver) showWinnerModal(gameState.winner); } }); showView('game'); }
-function handleBoardClick(event) { if (!gameState || gameState.isGameOver || gameState.currentPlayer !== myRole) { if (gameState && !gameState.isGameOver) console.log("Cannot make a move. It's " + gameState.currentPlayer + "'s turn, and your role is " + myRole); return; } const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height; const canvasX = (event.clientX - rect.left) * scaleX; const canvasY = (event.clientY - rect.top) * scaleY; const x = Math.floor(canvasX / CELL_SIZE); const y = Math.floor(canvasY / CELL_SIZE); if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE && !gameState.board[y][x]) { const { board, currentPlayer, moveCount } = gameState; const newBoard = board.map(row => [...row]); newBoard[y][x] = currentPlayer; const lastMove = { x, y, color: currentPlayer }; const updates = { board: newBoard, moveCount: moveCount + 1, currentPlayer: currentPlayer === 'black' ? 'white' : 'black' }; if (checkWinner(newBoard, lastMove)) { updates.isGameOver = true; updates.winner = currentPlayer; updates.currentPlayer = null; } else if (updates.moveCount === BOARD_SIZE * BOARD_SIZE) { updates.isGameOver = true; updates.winner = 'draw'; updates.currentPlayer = null; } db.ref(`games/${currentGameId}`).update(updates); } }
-function resetGame() { if (gameUnsubscribe) gameUnsubscribe(); currentGameId = null; myRole = null; gameState = {}; modalOverlay.classList.add('hidden'); showView('lobby'); redraw(createBoard()); }
