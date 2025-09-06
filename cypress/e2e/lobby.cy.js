@@ -19,8 +19,8 @@ describe('Lobby and Game Creation Flow', () => {
     cy.get('#game-board').should('be.visible');
     cy.get('#lobby-container').should('not.be.visible');
 
-    // Крок 10: Робимо перший хід
-    cy.get('#game-board').click();
+  cy.wait(500);
+  cy.get('#game-board').click(); 
 
     // Крок 11: Перевіряємо, що гра не "зламалася"
     cy.get('#modal-overlay').should('not.be.visible');
